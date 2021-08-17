@@ -1,0 +1,15 @@
+[Unit]
+Description=Garath's Govee Monitor
+
+[Service]
+Type=notify
+
+WorkingDirectory=/usr/local/lib/govee-monitor/
+ExecStart=/usr/local/bin/dotnet /usr/local/lib/govee-monitor/Garat.Govee.dll
+Restart=on-failure
+# 10 min restart wait to cover-up dbus .NET crash
+RestartSec=600
+SyslogIdentifier=govee-monitor
+
+[Install]
+WantedBy=multi-user.target
