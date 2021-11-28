@@ -1,7 +1,6 @@
-﻿namespace Garath.Govee
+﻿namespace Garath.Govee;
+
+public class PgSensorDataWriterConfiguration
 {
-    public class PgSensorDataWriterConfiguration
-    {
-        public string ConnectionString { get; set; }
-    }
+    public string ConnectionString { get; set; }
 }
