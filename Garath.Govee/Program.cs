@@ -1,16 +1,20 @@
-using Garath.Govee;
+﻿using Garath.Govee;
 using HashtagChris.DotNetBlueZ;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Diagnostics;
 using System.Threading.Channels;
 
 
 Console.WriteLine("Hello World!");
 
+Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
 using IHost host = Host.CreateDefaultBuilder(args)
     .UseSystemd()
     .ConfigureServices((context, services) =>
     {
+        services.AddApplicationInsightsTelemetryWorkerService();
         services.AddSingleton(services => BlueZManager.GetAdapterAsync("hci0").GetAwaiter().GetResult());
         services.AddHostedService<GoveeMonitor>();
         services.AddHostedService<PgSensorDataWriter>();

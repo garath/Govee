@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
+using System.Diagnostics;
 using System.Threading.Channels;
 
 namespace Garath.Govee;
@@ -22,6 +23,8 @@ public sealed class PgSensorDataWriter : BackgroundService
     {
         await foreach (SensorData data in _reader.ReadAllAsync(CancellationToken.None))
         {
+            Activity activity = new Activity("PostNewSensorData").Start();
+
             try
             {
                 await Policy
@@ -34,6 +37,10 @@ public sealed class PgSensorDataWriter : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Caught exception while trying to write sensor data");
+            }
+            finally
+            {
+                activity.Stop();
             }
         }
 

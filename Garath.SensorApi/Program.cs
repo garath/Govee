@@ -7,6 +7,7 @@ builder.Host.UseSystemd();
 
 // Add services to the container.
 
+builder.Services.AddApplicationInsightsTelemetry();
 builder.Services.AddScoped<PgSensorDataProvider>();
 builder.Services.Configure<PgSensorDataProviderConfiguration>(
     config => config.ConnectionString = builder.Configuration.GetConnectionString("SensorDatabase")
