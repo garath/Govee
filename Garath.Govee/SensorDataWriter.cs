@@ -1,17 +1,17 @@
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
 using System.Threading.Channels;
 
 namespace Garath.Govee;
 
-public sealed class PgSensorDataWriter : BackgroundService
+public sealed class SensorDataWriter : BackgroundService
 {
-    private readonly ILogger<PgSensorDataWriter> _logger;
+    private readonly ILogger<SensorDataWriter> _logger;
     private readonly ChannelReader<SensorData> _reader;
     private readonly SensorApiClient _sensorApiClient;
 
-    public PgSensorDataWriter(ILogger<PgSensorDataWriter> logger, ChannelReader<SensorData> reader, SensorApiClient sensorApiClient)
+    public SensorDataWriter(ILogger<SensorDataWriter> logger, ChannelReader<SensorData> reader, SensorApiClient sensorApiClient)
     {
         _logger = logger;
         _reader = reader;

@@ -1,0 +1,14 @@
+﻿[Unit]
+Description=Garath's Govee Sensor API
+
+[Service]
+Type=notify
+
+WorkingDirectory=/usr/local/lib/govee-api/
+ExecStart=/usr/local/bin/dotnet /usr/local/lib/govee-api/Garath.SensorApi.dll
+Restart=on-failure
+SyslogIdentifier=govee-api
+Environment=ASPNETCORE_ENVIRONMENT=Production
+
+[Install]
+WantedBy=multi-user.target
