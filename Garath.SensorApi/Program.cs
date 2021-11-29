@@ -13,6 +13,16 @@ builder.Services.Configure<PgSensorDataProviderConfiguration>(
     config => config.ConnectionString = builder.Configuration.GetConnectionString("SensorDatabase")
 );
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: "ApiRelaxed",
+        builder =>
+        {
+            builder.AllowAnyOrigin();
+            builder.WithMethods("GET");
+        });
+});
+
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddHttpLogging(options =>
@@ -36,6 +46,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors();
 app.UseAuthorization();
 app.MapControllers();
 

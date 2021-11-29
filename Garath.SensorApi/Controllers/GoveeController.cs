@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Garath.SensorApi.Controllers;
 
@@ -14,6 +15,7 @@ public class GoveeController : ControllerBase
     }
 
     [HttpGet]
+    [EnableCors("ApiRelaxed")]
     public IAsyncEnumerable<SensorData> Get(CancellationToken cancellationToken)
     {
         return _dataProvider.Get(cancellationToken);
