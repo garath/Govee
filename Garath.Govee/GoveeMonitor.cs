@@ -20,8 +20,8 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
     private readonly ChannelWriter<SensorData> _writer;
 
     private Task? _monitorTask;
-    private CancellationTokenSource _stoppingTokenSource = new CancellationTokenSource();
-    private Dictionary<string, IDisposable> disposableWatchers = new Dictionary<string, IDisposable>();
+    private readonly CancellationTokenSource _stoppingTokenSource = new();
+    private readonly Dictionary<string, IDisposable> disposableWatchers = new();
 
     public GoveeMonitor(ILogger<GoveeMonitor> logger, Adapter adapter, ChannelWriter<SensorData> writer, IOptions<GoveeMonitorConfiguration> configuration)
     {
@@ -44,7 +44,7 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
     public Task StartAsync(CancellationToken cancellationToken)
     {
         _logger.LogDebug("Starting Monitor task");
-        _logger.LogDebug($"Monitoring addresses: {string.Join(", ", _configuration.AddressesToMonitor)}");
+        _logger.LogDebug("Monitoring addresses: {MonitoredAddresses}", string.Join(", ", _configuration.AddressesToMonitor));
 
         _monitorTask = MonitorTask(_stoppingTokenSource.Token);
 
@@ -61,7 +61,7 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
     {
         _logger.LogDebug("Interrogating known devices");
         IReadOnlyList<Device> devices = await _adapter.GetDevicesAsync();
-        _logger.LogTrace($"Found {devices.Count} devices in scan");
+        _logger.LogTrace("Found {ScannedDeviceFoundCount} devices in scan", devices.Count);
 
         foreach (Device device in devices)
         {
@@ -100,15 +100,13 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
 
         foreach ((string key, object value) in changes.Changed)
         {
-            //_logger.LogTrace($"Change property {key} has value type {value?.GetType().FullName ?? "(is null)"}");
-
             if (value is short valueShort)
             {
                 if (key == "RSSI")
                 {
-                    _logger.LogInformation("RSSI: {RSSI}", valueShort);
+                    _logger.LogDebug("RSSI: {RSSI}", valueShort);
 
-                    SensorData sensorData = new SensorData(timestamp, address)
+                    SensorData sensorData = new(timestamp, address)
                     {
                         ReceivedSignalStrength = valueShort
                     };
@@ -121,9 +119,8 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
                 }
                 else
                 {
-                    _logger.LogInformation("Key: {Key}, Value: {Value}", key, valueShort);
+                    _logger.LogDebug("Key: {Key}, Value: {Value}", key, valueShort);
                 }
-                //Console.WriteLine($"Key: 0x{key:X}, Value: 0x{valueShort:X}");
             }
             else if (value is Dictionary<ushort, object> valueDictionary)
             {
@@ -137,16 +134,15 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
 
                             int temperatureAndHumidity = subvalueBytes[1] << 16 | subvalueBytes[2] << 8 | subvalueBytes[3];
                             float temperatureInCelsius = (float)temperatureAndHumidity / 10000;
-                            float temperatureInFahrenheit = ((float)9 / 5) * temperatureInCelsius + 32;
                             float humidity = (float)(temperatureAndHumidity % 1000) / 10;
 
                             int battery = subvalueBytes[4];
 
-                            _logger.LogInformation($"Temperature: {{TemperatureCelsius}}°C / {temperatureInFahrenheit}°F", temperatureInCelsius);
-                            _logger.LogInformation("Humidity: {Humidity}%", humidity);
-                            _logger.LogInformation("Battery: {Battery}%", battery);
+                            _logger.LogDebug("Temperature: {TemperatureCelsius}°C", temperatureInCelsius);
+                            _logger.LogDebug("Humidity: {Humidity}%", humidity);
+                            _logger.LogDebug("Battery: {Battery}%", battery);
 
-                            SensorData sensorData = new SensorData(timestamp, address)
+                            SensorData sensorData = new(timestamp, address)
                             {
                                 TemperatureCelsius = temperatureInCelsius,
                                 Humidity = humidity,
@@ -161,12 +157,12 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
                         }
                         else
                         {
-                            _logger.LogInformation($"Key: {key}, SubKey: 0x{subkey:X04}, SubValue: {BitConverter.ToString(subvalueBytes)}");
+                            _logger.LogDebug("Key: {Key}, SubKey: {SubKey}, SubValue: {SubValue}", key, subkey, BitConverter.ToString(subvalueBytes));
                         }
                     }
                     else
                     {
-                        _logger.LogWarning($"Unrecognized subvalue type {subvalue.GetType()}");
+                        _logger.LogWarning("Unrecognized subvalue type {UnrecognizedSubvalueType}", subvalue.GetType());
                     }
                 }
             }
