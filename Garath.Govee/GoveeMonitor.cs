@@ -57,6 +57,25 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
         return _monitorTask ?? Task.CompletedTask;
     }
 
+    private async Task DeviceFoundHandler(Adapter sender, DeviceFoundEventArgs eventArgs)
+    {
+        string address = await eventArgs.Device.GetAddressAsync();
+
+        if (!_configuration.AddressesToMonitor.Contains(address, StringComparer.OrdinalIgnoreCase))
+            return;
+
+        _logger.LogTrace("DeviceFound event triggered for address {Address}", address);
+
+        if (disposableWatchers.ContainsKey(address))
+            return;
+
+        _logger.LogDebug("Monitoring device {DeviceAddress}", address);
+        IDisposable watcher = await eventArgs.Device.WatchPropertiesAsync(changes => PropertiesWatcher(address, changes));
+        disposableWatchers.Add(address, watcher);
+
+        return;
+    }
+
     private async Task MonitorTask(CancellationToken stoppingToken)
     {
         _logger.LogDebug("Interrogating known devices");
@@ -74,16 +93,23 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
                 continue;
             }
 
-            _logger.LogTrace("Monitoring device {DeviceAddress}", deviceProperties.Address);
+            _logger.LogDebug("Monitoring device {DeviceAddress}", deviceProperties.Address);
             IDisposable watcher = await device.WatchPropertiesAsync(changes => PropertiesWatcher(deviceProperties.Address, changes));
             disposableWatchers.Add(deviceProperties.Address, watcher);
         }
+
+        _adapter.DeviceFound += DeviceFoundHandler;
 
         _logger.LogTrace("Starting discovery");
         await _adapter.StartDiscoveryAsync();
         try
         {
-            await Task.Delay(-1, stoppingToken);
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                bool isDiscovering = await _adapter.GetDiscoveringAsync();
+                _logger.LogDebug("Adapter isDiscovering? {IsDiscovering}", isDiscovering);
+            }
         }
         catch (TaskCanceledException ex) when (ex.CancellationToken == stoppingToken)
         {
@@ -91,10 +117,17 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
             await _adapter.StopDiscoveryAsync();
             _writer.Complete();
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected exception!");
+            throw;
+        }
     }
 
     private void PropertiesWatcher(string address, Tmds.DBus.PropertyChanges changes)
     {
+        _logger.LogTrace("Entered PropertiesWatcher for address {Address}", address);
+
         using IDisposable addressScope = _logger.BeginScope(KeyValuePair.Create("Address", address));
         DateTimeOffset timestamp = DateTimeOffset.UtcNow;
 
