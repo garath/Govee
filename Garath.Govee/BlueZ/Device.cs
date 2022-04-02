@@ -2,6 +2,8 @@
 using System.Threading.Tasks;
 using Tmds.DBus;
 
+#nullable disable
+
 namespace HashtagChris.DotNetBlueZ
 {
     public delegate Task DeviceEventHandlerAsync(Device sender, BlueZEventArgs eventArgs);

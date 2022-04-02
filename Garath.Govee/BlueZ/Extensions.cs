@@ -1,5 +1,7 @@
 ﻿using Tmds.DBus;
 
+#nullable disable
+
 namespace HashtagChris.DotNetBlueZ.Extensions;
 
 public static class Extensions

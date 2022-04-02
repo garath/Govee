@@ -1,5 +1,7 @@
 ﻿using Tmds.DBus;
 
+#nullable disable
+
 namespace HashtagChris.DotNetBlueZ;
 
 public static class BlueZManager
