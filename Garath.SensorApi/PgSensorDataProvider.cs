@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Garath.Govee.SiteApp.Shared;
+using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;

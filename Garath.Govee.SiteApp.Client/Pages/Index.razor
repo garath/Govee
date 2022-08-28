@@ -1,0 +1,104 @@
+﻿@page "/"
+@implements IAsyncDisposable
+@using Humanizer
+@using Microsoft.AspNetCore.SignalR.Client
+@using Microsoft.Extensions.Logging
+@inject ILoggerProvider LoggerProvider
+@inject SensorApiClient SensorApiClient
+@inject NavigationManager NavigationManager;
+
+<PageTitle>Garath's Sensor Data</PageTitle>
+
+<h3>Garath's Sensor Data</h3>
+
+<br />
+
+<div class="container text-center">
+	<div class="row">
+		@foreach (SensorData data in OrderedSensorData ?? Enumerable.Empty<SensorData>())
+		{
+			<div class="col">
+				<div class="card" style="width: 18rem;">
+					<div class="card-body">
+						<h5 class="card-title">@GetSuitableSensorName(data.Address)</h5>
+						<p class="card-text">A Govee sensor. Data last received <span title=@data.Timestamp.ToString("R")>@data.Timestamp.Humanize()</span>.</p>
+					</div>
+					<ul class="list-group list-group-flush">
+						@if (data.TemperatureCelsius is not null)
+						{
+							<li class="list-group-item">Temperature: @(Math.Round(CelsiusToFahrenheit(data.TemperatureCelsius.Value), 1))&nbsp;°F</li>
+						}
+						@if (data.Humidity != null)
+						{
+							<li class="list-group-item">Humidity: @(data.Humidity)&nbsp;&percnt;</li>
+						}
+						@if (data.ReceivedSignalStrength != null)
+						{
+							<li class="list-group-item">RSSI: @data.ReceivedSignalStrength</li>
+						}
+						@if (data.Battery != null)
+						{
+							<li class="list-group-item">Battery: @data.Battery</li>
+						}
+					</ul>
+					<div class="card-body">
+						<a href="#" class="card-link">Edit</a>
+						<a href="#" class="card-link">Details</a>
+					</div>
+				</div>
+			</div>
+		}
+	</div>
+</div>
+
+@code {
+	private IEnumerable<Garath.Govee.SiteApp.Shared.SensorData>? sensorData;
+	private IEnumerable<SensorData>? OrderedSensorData => sensorData?.OrderBy(d => d.Address);
+
+	private static IReadOnlyDictionary<string, string> addressNameMap = new Dictionary<string, string>() {
+		{ "A4C1385B188A", "Office" },
+		{ "A4C138EBDB5A", "Living room" }
+	};
+
+	private HubConnection? hubConnection;
+
+	protected override Task OnInitializedAsync()
+	{
+		Uri hubUri = new Uri(NavigationManager.BaseUri + "sensorHub");
+
+		hubConnection = new HubConnectionBuilder()
+			.WithUrl(hubUri)
+			.ConfigureLogging(loggingBuilder => loggingBuilder.AddProvider(LoggerProvider))
+			.WithAutomaticReconnect()
+			.Build();
+
+		hubConnection.On<IEnumerable<SensorData>>(nameof(ISensorHubClient.ReceiveData), (data) =>
+		{
+			sensorData = data;
+			StateHasChanged();
+		});
+
+		return hubConnection.StartAsync();
+	}
+
+	protected override async Task OnParametersSetAsync()
+	{
+		if (hubConnection is not null)
+			await hubConnection.InvokeAsync(nameof(ISensorHubServer.SendFirstData));
+	}
+
+	private static float CelsiusToFahrenheit(float temperatureInCelsius) => temperatureInCelsius * (float)9 / 5 + 32;
+
+	private static string GetSuitableSensorName(string address) =>
+		addressNameMap.TryGetValue(address, out string? name) ? name : address;
+
+	public ValueTask DisposeAsync()
+	{
+		if (hubConnection is not null)
+		{
+			return hubConnection.DisposeAsync();
+		}
+
+		return ValueTask.CompletedTask;
+	}
+}

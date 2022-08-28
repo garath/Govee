@@ -9,9 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.20.0" />
+    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.21.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="6.0.8" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="6.0.0" />
-    <PackageReference Include="Npgsql" Version="6.0.3" />
+    <PackageReference Include="Npgsql" Version="6.0.6" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Garath.Govee.SiteApp.Client\Garath.Govee.SiteApp.Client.csproj" />
+    <ProjectReference Include="..\Garath.Govee.SiteApp.Shared\Garath.Govee.SiteApp.Shared.csproj" />
+  </ItemGroup>         
 
 </Project>

@@ -1,4 +1,4 @@
-﻿namespace Garath.SensorApi;
+﻿namespace Garath.Govee.SiteApp.Shared;
 
 public class SensorData
 {

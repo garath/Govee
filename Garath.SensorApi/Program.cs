@@ -1,4 +1,5 @@
 using Garath.SensorApi;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,13 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddSignalR();
+builder.Services.AddResponseCompression(opts =>
+{
+    opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+        new[] { "application/octet-stream" });
+});
+
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddHttpLogging(options =>
@@ -33,21 +41,34 @@ if (builder.Environment.IsDevelopment())
 }
 
 builder.Services.AddControllers();
+builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddHostedService<DataSenderService>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
+app.UseResponseCompression();
+
 if (app.Environment.IsDevelopment())
 {
+    app.UseWebAssemblyDebugging();
     app.UseHttpLogging();
     app.UseDeveloperExceptionPage();
 }
 
 app.UseHttpsRedirection();
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
+app.UseRouting();
 app.UseCors();
 app.UseAuthorization();
+app.MapRazorPages();
 app.MapControllers();
+app.MapHub<SensorHub>("/SensorHub");
+app.MapFallbackToFile("index.html");
 
 app.Run();
