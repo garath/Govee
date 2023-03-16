@@ -15,7 +15,7 @@
 
 <div class="container text-center">
 	<div class="row">
-		@foreach (SensorData data in OrderedSensorData ?? Enumerable.Empty<SensorData>())
+		@foreach (SensorDataView data in DisplayedSensors.Values)
 		{
 			<div class="col">
 				<div class="card" style="width: 18rem;">
@@ -34,11 +34,11 @@
 						}
 						@if (data.ReceivedSignalStrength != null)
 						{
-							<li class="list-group-item">RSSI: @data.ReceivedSignalStrength</li>
+							<li class="list-group-item">RSSI: @data.ReceivedSignalStrength&nbsp;dBm</li>
 						}
 						@if (data.Battery != null)
 						{
-							<li class="list-group-item">Battery: @data.Battery</li>
+							<li class="list-group-item">Battery: @(data.Battery)&nbsp;&percnt;</li>
 						}
 					</ul>
 					<div class="card-body">
@@ -52,12 +52,11 @@
 </div>
 
 @code {
-	private IEnumerable<Garath.Govee.SiteApp.Shared.SensorData>? sensorData;
-	private IEnumerable<SensorData>? OrderedSensorData => sensorData?.OrderBy(d => d.Address);
+	private SortedList<string, SensorDataView> DisplayedSensors = new(StringComparer.OrdinalIgnoreCase);
 
 	private static IReadOnlyDictionary<string, string> addressNameMap = new Dictionary<string, string>() {
-		{ "A4C1385B188A", "Office" },
-		{ "A4C138EBDB5A", "Living room" }
+		{ "A4:C1:38:5B:18:8A", "Office" },
+		{ "A4:C1:38:EB:DB:5A", "Living room" }
 	};
 
 	private HubConnection? hubConnection;
@@ -74,7 +73,32 @@
 
 		hubConnection.On<IEnumerable<SensorData>>(nameof(ISensorHubClient.ReceiveData), (data) =>
 		{
-			sensorData = data;
+			foreach(SensorData incomingData in data)
+			{
+				DisplayedSensors.TryGetValue(incomingData.Address, out SensorDataView? existingItem);
+
+				if (existingItem is not null)
+				{
+					if (incomingData.TemperatureCelsius is not null)
+						existingItem.TemperatureCelsius = incomingData.TemperatureCelsius;
+
+					if (incomingData.ReceivedSignalStrength is not null)
+						existingItem.ReceivedSignalStrength = incomingData.ReceivedSignalStrength;
+
+					if (incomingData.Battery is not null)
+						existingItem.Battery = incomingData.Battery;
+
+					if (incomingData.Humidity is not null)
+						existingItem.Humidity = incomingData.Humidity;
+
+					existingItem.Timestamp = incomingData.Timestamp;						
+				}
+				else
+				{
+					DisplayedSensors.Add(incomingData.Address, SensorDataView.Create(incomingData));
+				}
+			}
+
 			StateHasChanged();
 		});
 
@@ -100,5 +124,33 @@
 		}
 
 		return ValueTask.CompletedTask;
+	}
+
+	public class SensorDataView
+	{
+		public string Address { get; set; } = string.Empty;
+		public string Name { get; set; } = string.Empty;
+		public float? TemperatureCelsius { get; set; }
+		public float? Humidity { get; set; }
+		public float? ReceivedSignalStrength { get; set; }
+		public float? Battery { get; set; }
+		public DateTimeOffset Timestamp { get; set; }
+
+		public SensorDataView(string address, DateTimeOffset timestamp)
+		{
+			Address = address;
+			Timestamp = timestamp;
+		}
+
+		public static SensorDataView Create(SensorData sensorData)
+		{
+			return new SensorDataView(sensorData.Address, sensorData.Timestamp)
+			{
+				TemperatureCelsius = sensorData.TemperatureCelsius,
+				Humidity = sensorData.Humidity,
+				ReceivedSignalStrength = sensorData.ReceivedSignalStrength,
+				Battery = sensorData.Battery
+			};
+		}
 	}
 }

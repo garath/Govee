@@ -62,7 +62,7 @@ public class PgSensorDataProvider
             int? battery = reader.GetValue(4) == DBNull.Value ? null : (int)reader.GetValue(4);
             int? rssi = reader.GetValue(5) == DBNull.Value ? null : (int)reader.GetValue(5);
 
-            SensorData data = new(timestamp, address.ToString())
+            SensorData data = new(timestamp, PhysicalAddressToFormattedString(address))
             {
                 TemperatureCelsius = temperature,
                 Humidity = humidity,
@@ -113,5 +113,13 @@ public class PgSensorDataProvider
 
             await command.ExecuteNonQueryAsync(CancellationToken.None);
         }
+    }
+
+    private string PhysicalAddressToFormattedString(PhysicalAddress address)
+    {
+        byte[] bytes = address.GetAddressBytes();
+        string formattedString = string.Join(":", bytes.Select(b => b.ToString("X2")));
+
+        return formattedString;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Garath.Govee.SiteApp.Shared;
+using MediatR;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,10 +10,12 @@ namespace Garath.SensorApi.Controllers;
 public class GoveeController : ControllerBase
 {
     private readonly PgSensorDataProvider _dataProvider;
+    private readonly IMediator _mediator;
 
-    public GoveeController(PgSensorDataProvider dataProvider)
+    public GoveeController(PgSensorDataProvider dataProvider, IMediator mediator)
     {
         _dataProvider = dataProvider;
+        _mediator = mediator;
     }
 
     [HttpGet]
@@ -25,6 +28,6 @@ public class GoveeController : ControllerBase
     [HttpPost]
     public async Task Post(IEnumerable<SensorData> data, CancellationToken cancellationToken)
     {
-        await _dataProvider.AddRange(data, cancellationToken);
+        await _mediator.Publish(new SensorDataNotification(data), cancellationToken);
     }
 }

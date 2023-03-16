@@ -1,5 +1,7 @@
 using Garath.SensorApi;
+using MediatR;
 using Microsoft.AspNetCore.ResponseCompression;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +26,7 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddMediatR(Assembly.GetExecutingAssembly());
 builder.Services.AddSignalR();
 builder.Services.AddResponseCompression(opts =>
 {
@@ -44,8 +47,6 @@ builder.Services.AddControllers();
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddHostedService<DataSenderService>();
 
 var app = builder.Build();
 
