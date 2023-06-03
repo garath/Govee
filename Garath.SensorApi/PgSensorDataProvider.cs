@@ -1,35 +1,24 @@
 ﻿using Garath.Govee.SiteApp.Shared;
-using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Net.NetworkInformation;
 using System.Runtime.CompilerServices;
 
 namespace Garath.SensorApi;
 
-public class PgSensorDataProviderConfiguration
-{
-    public string? ConnectionString { get; set; }
-}
-
 public class PgSensorDataProvider
 {
-    private readonly PgSensorDataProviderConfiguration _configuration;
+    private readonly NpgsqlConnection _connection;
 
-    public PgSensorDataProvider(IOptions<PgSensorDataProviderConfiguration> configuration)
+    public PgSensorDataProvider(NpgsqlConnection connection)
     {
-        _configuration = configuration.Value;
-
         AppContext.SetSwitch("Npgsql.EnableSqlRewriting", false);
+        _connection = connection;
     }
 
     public async IAsyncEnumerable<SensorData> Get([EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        if (_configuration.ConnectionString == null)
-            throw new InvalidOperationException("ConfigurationString is null");
-
-        using NpgsqlConnection connection = new(_configuration.ConnectionString);
-        await connection.OpenAsync(cancellationToken);
-        await using NpgsqlCommand command = connection.CreateCommand();
+        await _connection.OpenAsync(cancellationToken);
+        await using NpgsqlCommand command = _connection.CreateCommand();
 
         command.CommandText =
             "SELECT GOVEE.TIMESTAMP, " +
@@ -78,13 +67,12 @@ public class PgSensorDataProvider
 
     public async Task AddRange(IEnumerable<SensorData> data, CancellationToken cancellationToken)
     {
-        await using NpgsqlConnection connection = new(_configuration.ConnectionString);
-        await connection.OpenAsync(cancellationToken);
+        await _connection.OpenAsync(cancellationToken);
 
         await using NpgsqlCommand command = new(
                 "INSERT INTO govee (timestamp, address, rssi, temp_c, humidity, battery) " +
                 "VALUES ($1, $2, $3, $4, $5, $6)"
-            , connection);
+            , _connection);
 
         NpgsqlParameter timestampParameter = new(null, NpgsqlTypes.NpgsqlDbType.TimestampTz);
         NpgsqlParameter addressParameter = new(null, NpgsqlTypes.NpgsqlDbType.MacAddr8);

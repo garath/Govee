@@ -42,7 +42,7 @@ using IHost host = Host.CreateDefaultBuilder(args)
 
             client.DefaultRequestHeaders.UserAgent.Add(runtimeHeader);
             client.DefaultRequestHeaders.UserAgent.Add(productHeader);
-            client.BaseAddress = new Uri(context.Configuration["SensorApiBaseAddress"]);
+            client.BaseAddress = new Uri(context.Configuration["SensorApiBaseAddress"]!);
         });
     })
     .Build();

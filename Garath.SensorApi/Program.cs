@@ -1,5 +1,4 @@
 using Garath.SensorApi;
-using MediatR;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Reflection;
 
@@ -12,9 +11,7 @@ builder.Host.UseSystemd();
 
 builder.Services.AddApplicationInsightsTelemetry();
 builder.Services.AddScoped<PgSensorDataProvider>();
-builder.Services.Configure<PgSensorDataProviderConfiguration>(
-    config => config.ConnectionString = builder.Configuration.GetConnectionString("SensorDatabase")
-);
+builder.Services.AddNpgsqlDataSource(builder.Configuration.GetConnectionString("SensorDatabase")!);
 
 builder.Services.AddCors(options =>
 {
@@ -26,7 +23,7 @@ builder.Services.AddCors(options =>
         });
 });
 
-builder.Services.AddMediatR(Assembly.GetExecutingAssembly());
+builder.Services.AddMediatR(config => config.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
 builder.Services.AddSignalR();
 builder.Services.AddResponseCompression(opts =>
 {

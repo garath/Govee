@@ -125,7 +125,7 @@ public sealed class GoveeMonitor : IHostedService, IDisposable
 
     private void PropertiesWatcher(string address, Tmds.DBus.PropertyChanges changes)
     {
-        using IDisposable addressScope = _logger.BeginScope(KeyValuePair.Create("Address", address));
+        using IDisposable addressScope = _logger.BeginScope(KeyValuePair.Create("Address", address))!;
         DateTimeOffset timestamp = DateTimeOffset.UtcNow;
 
         foreach ((string key, object value) in changes.Changed)
