@@ -3,6 +3,8 @@
 @using Humanizer
 @using Microsoft.AspNetCore.SignalR.Client
 @using Microsoft.Extensions.Logging
+@using System.Reflection
+@using System.Runtime.Versioning
 @inject ILoggerProvider LoggerProvider
 @inject SensorApiClient SensorApiClient
 @inject NavigationManager NavigationManager;
@@ -10,6 +12,12 @@
 <PageTitle>Garath's Sensor Data</PageTitle>
 
 <h3>Garath's Sensor Data</h3>
+
+<br />
+
+<div>
+	Host , version 
+</div>
 
 <br />
 
@@ -56,7 +64,7 @@
 
 	private static IReadOnlyDictionary<string, string> addressNameMap = new Dictionary<string, string>() {
 		{ "A4:C1:38:5B:18:8A", "Office" },
-		{ "A4:C1:38:EB:DB:5A", "Living room" }
+		{ "A4:C1:38:EB:DB:5A", "Bedroom" }
 	};
 
 	private HubConnection? hubConnection;
