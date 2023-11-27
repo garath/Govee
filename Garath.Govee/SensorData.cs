@@ -1,4 +1,6 @@
-﻿namespace Garath.Govee;
+﻿using System.Text.Json.Serialization;
+
+namespace Garath.Govee;
 
 public class SensorData
 {
@@ -15,4 +17,11 @@ public class SensorData
         Timestamp = timestamp;
         Address = address;
     }
+}
+
+[JsonSerializable(typeof(SensorData))]
+[JsonSerializable(typeof(IEnumerable<SensorData>))]
+public partial class SensorDataSerializerContext : JsonSerializerContext
+{
+    
 }

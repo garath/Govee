@@ -2,17 +2,21 @@
 
 namespace Garath.Govee;
 
-    public class SensorApiClient
+public class SensorApiClient
+{
+    private readonly HttpClient _client;
+
+    public SensorApiClient(HttpClient client)
     {
-        private readonly HttpClient _client;
-
-        public SensorApiClient(HttpClient client)
-        {
-            _client = client;
-        }
-
-        public async Task SendSensorData(IEnumerable<SensorData> data, CancellationToken cancellationToken)
-        {
-            using HttpResponseMessage message = await _client.PostAsJsonAsync("/api/govee", data, cancellationToken: cancellationToken);
-        }
+        _client = client;
     }
+
+    public async Task SendSensorData(IEnumerable<SensorData> data, CancellationToken cancellationToken)
+    {
+        using HttpResponseMessage message = await _client.PostAsJsonAsync(
+            requestUri: "/api/govee", 
+            @value: data, 
+            jsonTypeInfo: SensorDataSerializerContext.Default.IEnumerableSensorData, 
+            cancellationToken: cancellationToken);
+    }
+}
