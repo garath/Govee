@@ -2,9 +2,12 @@
 using HashtagChris.DotNetBlueZ;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using System.Diagnostics;
 using System.Threading.Channels;
-
 
 Console.WriteLine("Hello World!");
 
@@ -14,7 +17,6 @@ using IHost host = Host.CreateDefaultBuilder(args)
     .UseSystemd()
     .ConfigureServices((context, services) =>
     {
-        services.AddApplicationInsightsTelemetryWorkerService();
         services.AddSingleton(services => BlueZManager.GetAdapterAsync("hci0").GetAwaiter().GetResult());
         services.AddHostedService<GoveeMonitor>();
         services.AddHostedService<PgSensorDataWriter>();
@@ -44,6 +46,41 @@ using IHost host = Host.CreateDefaultBuilder(args)
             client.DefaultRequestHeaders.UserAgent.Add(productHeader);
             client.BaseAddress = new Uri(context.Configuration["SensorApiBaseAddress"]!);
         });
+
+        OpenTelemetryBuilder oTelBuilder = services.AddOpenTelemetry()
+            .WithTracing(builder => 
+            {
+                builder.AddHttpClientInstrumentation();
+                builder.AddConsoleExporter();
+
+                if (context.HostingEnvironment.IsDevelopment())
+                {
+                    builder.AddConsoleExporter();
+                }
+                else
+                {
+                    builder.AddOtlpExporter();
+                }
+            })
+            .WithMetrics(builder => 
+            {
+                builder.AddHttpClientInstrumentation();
+                
+                if (context.HostingEnvironment.IsDevelopment())
+                {
+                    builder.AddConsoleExporter();
+                }
+                else
+                {
+                    builder.AddOtlpExporter();
+                }
+            })
+            .ConfigureResource(resource => {
+                resource.AddService(
+                    serviceName: context.HostingEnvironment.ApplicationName, 
+                    serviceVersion: System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString());
+                resource.AddTelemetrySdk();
+            });
     })
     .Build();
 
